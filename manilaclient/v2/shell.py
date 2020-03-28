@@ -219,6 +219,26 @@ def _print_share_group(cs, share_group):
 
 
 @api_versions.experimental_api
+@api_versions.wraps("2.56")
+def _find_share_group_replica(cs, share_group_replica):
+    """Get a share group replica by name or ID."""
+    return apiclient_utils.find_resource(
+        cs.share_group_replicas, share_group_replica)
+
+
+def _print_share_group_replica(cs, share_group_replica):
+    info = share_group_replica._info.copy()
+    info.pop('links', None)
+    info.pop('members', None)
+    cliutils.print_dict(info)
+
+
+def _print_share_group_replica_members(cs, share_group_replica):
+    info = share_group_replica._info.copy()
+    cliutils.print_dict(info.get('members', {}))
+
+
+@api_versions.experimental_api
 @api_versions.wraps("2.31")
 def _find_share_group_snapshot(cs, share_group_snapshot):
     """Get a share group snapshot by name or ID."""
@@ -5012,6 +5032,277 @@ def do_share_group_reset_state(cs, args):
     """
     share_group = _find_share_group(cs, args.share_group)
     cs.share_groups.reset_state(share_group, args.state)
+
+
+##############################################################################
+#
+# Share group replicas
+#
+##############################################################################
+
+
+@cliutils.arg(
+    'share_group',
+    metavar='<share_group>',
+    help='Name or ID of the share group.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_replica_create(cs, args):
+    """Creates a new share group replica (Experimental)."""
+    share_group = _find_share_group(cs, args.share_group)
+    sg_replica = cs.share_group_replicas.create(share_group.id)
+    _print_share_group_replica(cs, sg_replica)
+
+
+@cliutils.arg(
+    '--all-tenants',
+    dest='all_tenants',
+    metavar='<0|1>',
+    nargs='?',
+    type=int,
+    const=1,
+    default=0,
+    help='Display information from all tenants (Admin only).')
+@cliutils.arg(
+    '--name',
+    metavar='<name>',
+    default=None,
+    help='Filter results by name.')
+@cliutils.arg(
+    '--status',
+    metavar='<status>',
+    default=None,
+    help='Filter results by status.')
+@cliutils.arg(
+    '--share-group-id', '--share_group_id',
+    metavar='<share_group_id>',
+    default=None,
+    action='single_alias',
+    help='Filter results by share group ID.')
+@cliutils.arg(
+    '--limit',
+    metavar='<limit>',
+    type=int,
+    default=None,
+    help='Maximum number of share group replicas to return. '
+         '(Default=None)')
+@cliutils.arg(
+    '--offset',
+    metavar="<offset>",
+    default=None,
+    help='Start position of share group replicas listing.')
+@cliutils.arg(
+    '--sort-key', '--sort_key',
+    metavar='<sort_key>',
+    type=str,
+    default=None,
+    action='single_alias',
+    help='Key to be sorted, available keys are %(keys)s. Default=None.' % {
+        'keys': constants.SHARE_GROUP_REPLICA_SORT_KEY_VALUES})
+@cliutils.arg(
+    '--sort-dir', '--sort_dir',
+    metavar='<sort_dir>',
+    type=str,
+    default=None,
+    action='single_alias',
+    help='Sort direction, available values are %(values)s. '
+         'OPTIONAL: Default=None.' % {'values': constants.SORT_DIR_VALUES})
+@cliutils.arg(
+    '--detailed',
+    dest='detailed',
+    default=True,
+    help='Show detailed information about share group replicas.')
+@cliutils.arg(
+    '--columns',
+    metavar='<columns>',
+    type=str,
+    default=None,
+    help='Comma separated list of columns to be displayed '
+         'example --columns "id,name".')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_replica_list(cs, args):
+    """List share group replicas with filters (Experimental)."""
+    if args.columns is not None:
+        list_of_keys = _split_columns(columns=args.columns)
+    else:
+        list_of_keys = ('id', 'name', 'status', 'description')
+
+    all_tenants = int(os.environ.get("ALL_TENANTS", args.all_tenants))
+
+    search_opts = {
+        'offset': args.offset,
+        'limit': args.limit,
+        'all_tenants': all_tenants,
+        'name': args.name,
+        'status': args.status,
+        'share_group_id': args.share_group_id,
+    }
+    share_group_replicas = cs.share_group_replicas.list(
+        detailed=args.detailed, search_opts=search_opts,
+        sort_key=args.sort_key, sort_dir=args.sort_dir)
+    cliutils.print_list(share_group_replicas, fields=list_of_keys,
+                        sortby_index=None)
+
+
+@cliutils.arg(
+    'share_group_replica',
+    metavar='<share_group_replica>',
+    help='Name or ID of the share group replica.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_replica_show(cs, args):
+    """Show details about a share group replica (Experimental)."""
+    sg_replica = _find_share_group_replica(cs, args.share_group_replica)
+    _print_share_group_replica(cs, sg_replica)
+
+
+@cliutils.arg(
+    'share_group_replica',
+    metavar='<share_group_replica>',
+    help='Name or ID of the share group replica.')
+@cliutils.arg(
+    '--columns',
+    metavar='<columns>',
+    type=str,
+    default=None,
+    help='Comma separated list of columns to be displayed '
+         'example --columns "id,name".')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_replica_list_members(cs, args):
+    """List members of a share group replica (Experimental)."""
+    if args.columns is not None:
+        list_of_keys = _split_columns(columns=args.columns)
+    else:
+        list_of_keys = ('Share ID', 'Size')
+
+    sg_replica = _find_share_group_replica(cs, args.share_group_replica)
+    # TODO(Ryan Liang): does it support member listing?
+    members = [type('ShareGroupReplicaMember', (object,), member)
+               for member in sg_replica._info.get('members', [])]
+    cliutils.print_list(members, fields=list_of_keys)
+
+
+@cliutils.arg(
+    '--state',
+    metavar='<state>',
+    default='available',
+    help=('Indicate which state to assign the share group replica. '
+          'Options include available, error, creating, deleting, '
+          'error_deleting. If no state is provided, '
+          'available will be used.'))
+@cliutils.arg(
+    'share_group_replica',
+    metavar='<share_group_replica>',
+    help='Name or ID of the share group replica.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_replica_reset_state(cs, args):
+    """Explicitly update the state of a share group replica
+
+    (Admin only, Experimental).
+    """
+    sg_replica = _find_share_group_replica(cs, args.share_group_replica)
+    cs.share_group_replicas.reset_state(sg_replica, args.state)
+
+
+@cliutils.arg(
+    'share_group_replica',
+    metavar='<share_group_replica>',
+    nargs='+',
+    help='Name or ID of the share group replica(s) to delete.')
+@cliutils.arg(
+    '--force',
+    action='store_true',
+    default=False,
+    help='Attempt to force delete the share group replica(s) (Default=False)'
+         ' (Admin only).')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_replica_delete(cs, args):
+    """Remove one or more share group replicas (Experimental)."""
+    failure_count = 0
+    kwargs = {}
+
+    if args.force is not None:
+        kwargs['force'] = args.force
+
+    for sg_replica in args.share_group_replica:
+        try:
+            sg_replica_ref = _find_share_group_replica(cs, sg_replica)
+            cs.share_group_replicas.delete(sg_replica_ref, **kwargs)
+        except Exception as e:
+            failure_count += 1
+            print("Delete for share group replica %s failed: %s" % (
+                sg_replica, e), file=sys.stderr)
+
+    if failure_count == len(args.share_group_replica):
+        raise exceptions.CommandError("Unable to delete any of the specified "
+                                      "share group replica.")
+
+
+@cliutils.arg(
+    'share_group_replica',
+    metavar='<share_group_replica>',
+    help='ID of the share group replica.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_replica_promote(cs, args):
+    """Promote specified share group replica to 'active' replica_state
+
+    (Experimental)."""
+    sg_replica = _find_share_group_replica(cs, args.share_group_replica)
+    cs.share_group_replicas.promote(sg_replica)
+
+
+@cliutils.arg(
+    'share_group_replica',
+    metavar='<share_group_replica>',
+    help='ID of the share group replica to modify.')
+@cliutils.arg(
+    '--replica-state',
+    '--replica_state',
+    '--state',  # alias for user sanity
+    metavar='<replica_state>',
+    default='out_of_sync',
+    action='single_alias',
+    help=('Indicate which replica_state to assign the group replica. Options '
+          'include in_sync, out_of_sync, active, error. If no '
+          'state is provided, out_of_sync will be used.'))
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_replica_reset_replica_state(cs, args):
+    """Explicitly update the 'replica_state' of a share group replica
+
+    (Experimental).
+    """
+    sg_replica = _find_share_group_replica(cs, args.share_group_replica)
+    cs.share_group_replicas.reset_replica_state(sg_replica, args.replica_state)
+
+
+@cliutils.arg(
+    'share_group_replica',
+    metavar='<share_group_replica>',
+    help='ID of the share group replica to resync.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_replica_resync(cs, args):
+    """Attempt to update the share group replica with its 'active' mirror
+
+     (Experimental).
+     """
+    sg_replica = _find_share_group_replica(cs, args.share_group_replica)
+    cs.share_group_replicas.resync(sg_replica)
 
 
 ##############################################################################

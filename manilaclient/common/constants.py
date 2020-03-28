@@ -68,6 +68,17 @@ SHARE_GROUP_SNAPSHOT_SORT_KEY_VALUES = (
     'share_group_id',
 )
 
+SHARE_GROUP_REPLICA_SORT_KEY_VALUES = (
+    'id',
+    'name',
+    'status',
+    'host',
+    'user_id',
+    'project_id',
+    'created_at',
+    'share_group_id',
+)
+
 TASK_STATE_MIGRATION_SUCCESS = 'migration_success'
 TASK_STATE_MIGRATION_ERROR = 'migration_error'
 TASK_STATE_MIGRATION_CANCELLED = 'migration_cancelled'
