@@ -5060,6 +5060,11 @@ def do_share_group_replica_create(cs, args):
     default=0,
     help='Display information from all tenants (Admin only).')
 @cliutils.arg(
+    '--replica-state', '--replica_state',
+    metavar='<replica_state>',
+    default=None,
+    help='Filter results by replica state.')
+@cliutils.arg(
     '--status',
     metavar='<status>',
     default=None,
@@ -5125,11 +5130,11 @@ def do_share_group_replica_list(cs, args):
 
     share_group = _find_share_group(cs, args.share_group)
     search_opts = {
-        'offset': args.offset,
-        'limit': args.limit,
         'all_tenants': all_tenants,
-        'name': args.name,
+        'replica_state': args.replica_state,
         'status': args.status,
+        'limit': args.limit,
+        'offset': args.offset,
     }
     share_group_replicas = cs.share_group_replicas.list(
         share_group=share_group, detailed=args.detailed,

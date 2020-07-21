@@ -95,10 +95,10 @@ class ShareGroupReplicaManager(base.ManagerWithFind):
         :param search_opts: dict with search options to filter out replicas.
             available keys are below (('name1', 'name2', ...), 'type'):
             - ('all_tenants', int)
-            - ('offset', int)
-            - ('limit', int)
-            - ('name', text)
+            - ('replica_state', text)
             - ('status', text)
+            - ('limit', int)
+            - ('offset', int)
         :param sort_key: Key to be sorted (i.e. 'created_at' or 'status').
         :param sort_dir: Sort direction, should be 'desc' or 'asc'.
         :rtype: list of :class:`ShareGroupReplica`
