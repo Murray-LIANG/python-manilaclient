@@ -70,9 +70,8 @@ SHARE_GROUP_SNAPSHOT_SORT_KEY_VALUES = (
 
 SHARE_GROUP_REPLICA_SORT_KEY_VALUES = (
     'id',
-    'name',
     'status',
-    'host',
+    'replica_state',
     'user_id',
     'project_id',
     'created_at',

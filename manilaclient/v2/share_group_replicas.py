@@ -99,7 +99,6 @@ class ShareGroupReplicaManager(base.ManagerWithFind):
             - ('limit', int)
             - ('name', text)
             - ('status', text)
-            - ('share_group_id', text)
         :param sort_key: Key to be sorted (i.e. 'created_at' or 'status').
         :param sort_dir: Sort direction, should be 'desc' or 'asc'.
         :rtype: list of :class:`ShareGroupReplica`
@@ -108,7 +107,7 @@ class ShareGroupReplicaManager(base.ManagerWithFind):
         search_opts = search_opts or {}
 
         if share_group:
-            search_opts['share_id'] = common_base.getid(share_group)
+            search_opts['share_group_id'] = common_base.getid(share_group)
 
         if sort_key is not None:
             if sort_key in constants.SHARE_GROUP_REPLICA_SORT_KEY_VALUES:
