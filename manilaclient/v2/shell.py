@@ -5589,6 +5589,7 @@ def do_share_replica_list(cs, args):
             'Status',
             'Replica State',
             'Share ID',
+            'Share Group Replica ID',
             'Host',
             'Availability Zone',
             'Updated At',
