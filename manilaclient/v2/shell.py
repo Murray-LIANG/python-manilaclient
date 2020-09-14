@@ -5128,7 +5128,8 @@ def do_share_group_replica_list(cs, args):
 
     all_tenants = int(os.environ.get("ALL_TENANTS", args.all_tenants))
 
-    share_group = _find_share_group(cs, args.share_group)
+    share_group = (_find_share_group(cs, args.share_group) if args.share_group
+                   else None)
     search_opts = {
         'all_tenants': all_tenants,
         'replica_state': args.replica_state,
