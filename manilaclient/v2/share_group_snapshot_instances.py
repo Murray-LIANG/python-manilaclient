@@ -73,7 +73,7 @@ class ShareGroupSnapshotInstanceManager(base.ManagerWithFind):
             available keys are below (('name1', 'name2', ...), 'type'):
             - ('all_tenants', int)
             - ('status', text)
-            - ('share_group_instance_id', text)
+            - ('share_group_instance', ShareGroupInstance object)
             - ('limit', int)
             - ('offset', int)
         :param sort_key: Key to be sorted (i.e. 'created_at' or 'status').
@@ -104,6 +104,10 @@ class ShareGroupSnapshotInstanceManager(base.ManagerWithFind):
                 raise ValueError('sort_dir must be one of the following: %s.'
                                  % ', '.join(constants.SORT_DIR_VALUES))
 
+        if 'share_group_instance' in search_opts:
+            search_opts['share_group_instance_id'] = common_base.getid(
+                search_opts.pop('share_group_instance'))
+            
         query_string = self._build_query_string(search_opts)
 
         if detailed:

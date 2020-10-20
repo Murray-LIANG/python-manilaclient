@@ -5852,8 +5852,8 @@ def do_share_group_snapshot_instance_list(cs, args):
         'offset': args.offset,
     }
     if args.share_group_instance:
-        search_opts['share_group_instance_id'] = _find_share_group_instance(
-            cs, args.share_group_instance)['id']
+        search_opts['share_group_instance'] = _find_share_group_instance(
+            cs, args.share_group_instance)
     share_group_snapshot_instances = cs.share_group_snapshot_instances.list(
         share_group_snapshot=share_group_snapshot, detailed=args.detailed,
         search_opts=search_opts, sort_key=args.sort_key,
