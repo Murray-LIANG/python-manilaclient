@@ -68,6 +68,18 @@ SHARE_GROUP_SNAPSHOT_SORT_KEY_VALUES = (
     'share_group_id',
 )
 
+SHARE_GROUP_SNAPSHOT_INSTANCE_SORT_KEY_VALUES = (
+    'id',
+    'name',
+    'status',
+    'user_id',
+    'project_id',
+    'created_at',
+    'updated_at',
+    'share_group_snapshot_id',
+    'share_group_instance_id',
+)
+
 SHARE_GROUP_REPLICA_SORT_KEY_VALUES = (
     'id',
     'status',
@@ -75,8 +87,11 @@ SHARE_GROUP_REPLICA_SORT_KEY_VALUES = (
     'user_id',
     'project_id',
     'created_at',
+    'updated_at',
     'share_group_id',
 )
+
+SHARE_GROUP_INSTANCE_SORT_KEY_VALUES = SHARE_GROUP_REPLICA_SORT_KEY_VALUES
 
 TASK_STATE_MIGRATION_SUCCESS = 'migration_success'
 TASK_STATE_MIGRATION_ERROR = 'migration_error'

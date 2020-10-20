@@ -234,6 +234,36 @@ def _print_share_group_replica(cs, share_group_replica):
 
 
 @api_versions.experimental_api
+@api_versions.wraps("2.56")
+def _find_share_group_instance(cs, share_group_instance):
+    """Get a share group instance by name or ID."""
+    return apiclient_utils.find_resource(
+        cs.share_group_instances, share_group_instance)
+
+
+def _print_share_group_instance(cs, share_group_instance):
+    info = share_group_instance._info.copy()
+    info.pop('links', None)
+    info.pop('members', None)
+    cliutils.print_dict(info)
+
+
+@api_versions.experimental_api
+@api_versions.wraps("2.56")
+def _find_share_group_snapshot_instance(cs, share_group_snapshot_instance):
+    """Get a share group snapshot instance by name or ID."""
+    return apiclient_utils.find_resource(
+        cs.share_group_snapshot_instances, share_group_snapshot_instance)
+
+
+def _print_share_group_snapshot_instance(cs, share_group_snapshot_instance):
+    info = share_group_snapshot_instance._info.copy()
+    info.pop('links', None)
+    info.pop('members', None)
+    cliutils.print_dict(info)
+
+
+@api_versions.experimental_api
 @api_versions.wraps("2.31")
 def _find_share_group_snapshot(cs, share_group_snapshot):
     """Get a share group snapshot by name or ID."""
@@ -5031,6 +5061,172 @@ def do_share_group_reset_state(cs, args):
 
 ##############################################################################
 #
+# Share group instances
+#
+##############################################################################
+
+
+@cliutils.arg(
+    '--all-tenants',
+    dest='all_tenants',
+    metavar='<0|1>',
+    nargs='?',
+    type=int,
+    const=1,
+    default=0,
+    help='Display information from all tenants (Admin only).')
+@cliutils.arg(
+    '--replica-state', '--replica_state',
+    metavar='<replica_state>',
+    default=None,
+    help='Filter results by replica state.')
+@cliutils.arg(
+    '--status',
+    metavar='<status>',
+    default=None,
+    help='Filter results by status.')
+@cliutils.arg(
+    '--share-group', '--share_group',
+    metavar='<share_group>',
+    default=None,
+    action='single_alias',
+    help='Filter results by share group ID or name.')
+@cliutils.arg(
+    '--limit',
+    metavar='<limit>',
+    type=int,
+    default=None,
+    help='Maximum number of share group instances to return. (Default=None)')
+@cliutils.arg(
+    '--offset',
+    metavar="<offset>",
+    default=None,
+    help='Start position of share group instances listing.')
+@cliutils.arg(
+    '--sort-key', '--sort_key',
+    metavar='<sort_key>',
+    type=str,
+    default=None,
+    action='single_alias',
+    help='Key to be sorted, available keys are %(keys)s. (Default=None)' % {
+        'keys': constants.SHARE_GROUP_INSTANCE_SORT_KEY_VALUES})
+@cliutils.arg(
+    '--sort-dir', '--sort_dir',
+    metavar='<sort_dir>',
+    type=str,
+    default=None,
+    action='single_alias',
+    help='Sort direction, available values are %(values)s. '
+         '(Default=None)' % {'values': constants.SORT_DIR_VALUES})
+@cliutils.arg(
+    '--detail', '--detailed',
+    dest='detailed',
+    default=True,
+    action='store_true',
+    help='Show detailed information about share group instances. '
+         '(Default=False)')
+@cliutils.arg(
+    '--columns',
+    metavar='<columns>',
+    type=str,
+    default=None,
+    help='Comma separated list of columns to be displayed. For example, '
+         '--columns "id,replica_state,status,share_group_id,'
+         'share_server_id,host".')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_instance_list(cs, args):
+    """List share group instances with filters (Experimental)."""
+    if args.columns is not None:
+        list_of_keys = _split_columns(columns=args.columns)
+    else:
+        list_of_keys = ('ID', 'Replica State', 'Share Group ID', 'Status')
+
+    all_tenants = int(os.environ.get("ALL_TENANTS", args.all_tenants))
+
+    share_group = (_find_share_group(cs, args.share_group) if args.share_group
+                   else None)
+    search_opts = {
+        'all_tenants': all_tenants,
+        'replica_state': args.replica_state,
+        'status': args.status,
+        'limit': args.limit,
+        'offset': args.offset,
+    }
+    share_group_instances = cs.share_group_instances.list(
+        share_group=share_group, detailed=args.detailed,
+        search_opts=search_opts, sort_key=args.sort_key,
+        sort_dir=args.sort_dir)
+    cliutils.print_list(share_group_instances, fields=list_of_keys,
+                        sortby_index=None)
+
+
+@cliutils.arg(
+    'share_group_instance',
+    metavar='<share_group_instance>',
+    help='Name or ID of the share group instance.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_instance_show(cs, args):
+    """Show details about a share group instance (Experimental)."""
+    sg_instance = _find_share_group_instance(cs, args.share_group_instance)
+    _print_share_group_instance(cs, sg_instance)
+
+
+@cliutils.arg(
+    'share_group_instance',
+    metavar='<share_group_instance>',
+    nargs='+',
+    help='Name or ID of the share group instance(s) to delete.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_instance_force_delete(cs, args):
+    """Force-delete one or more share group instances (Admin only,
+
+    Experimental)."""
+    failure_count = 0
+
+    for sg_instance in args.share_group_instance:
+        try:
+            _find_share_group_instance(cs, sg_instance).force_delete()
+        except Exception as e:
+            failure_count += 1
+            print("Force delete for share group instance %s failed: %s" % (
+                sg_instance, e), file=sys.stderr)
+
+    if failure_count == len(args.share_group_instance):
+        raise exceptions.CommandError("Unable to force delete any of the "
+                                      "specified share group instance.")
+
+
+@cliutils.arg(
+    '--state',
+    metavar='<state>',
+    default='available',
+    help=('Indicate which state to assign the share group instance. '
+          'Options include available, error, creating, deleting, '
+          'error_deleting. If no state is provided, available will be used.'))
+@cliutils.arg(
+    'share_group_instance',
+    metavar='<share_group_instance>',
+    help='Name or ID of the share group instance.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_instance_reset_state(cs, args):
+    """Explicitly update the state of a share group instance
+
+    (Admin only, Experimental).
+    """
+    _find_share_group_instance(cs, args.share_group_instance
+                               ).reset_state(args.state)
+
+
+##############################################################################
+#
 # Share group replicas
 #
 ##############################################################################
@@ -5114,8 +5310,9 @@ def do_share_group_replica_create(cs, args):
     metavar='<columns>',
     type=str,
     default=None,
-    help='Comma separated list of columns to be displayed '
-         'example --columns "id,name".')
+    help='Comma separated list of columns to be displayed. For example, '
+         '--columns "id,replica_state,status,share_group_id,'
+         'share_server_id,host".')
 @cliutils.service_type('sharev2')
 @api_versions.wraps("2.56")
 @api_versions.experimental_api
@@ -5167,8 +5364,9 @@ def do_share_group_replica_show(cs, args):
     metavar='<columns>',
     type=str,
     default=None,
-    help='Comma separated list of columns to be displayed '
-         'example --columns "id,name".')
+    help='Comma separated list of columns to be displayed. For example, '
+         '--columns "id,share_id,replica_state,status,share_group_replica_id".'
+)
 @cliutils.service_type('sharev2')
 @api_versions.wraps("2.56")
 @api_versions.experimental_api
@@ -5553,6 +5751,181 @@ def do_share_group_snapshot_delete(cs, args):
     if failure_count == len(args.share_group_snapshot):
         raise exceptions.CommandError("Unable to delete any of the specified "
                                       "share group snapshots.")
+
+
+##############################################################################
+#
+# Share group snapshot instances
+#
+##############################################################################
+
+
+@cliutils.arg(
+    '--all-tenants',
+    dest='all_tenants',
+    metavar='<0|1>',
+    nargs='?',
+    type=int,
+    const=1,
+    default=0,
+    help='Display information from all tenants (Admin only).')
+@cliutils.arg(
+    '--status',
+    metavar='<status>',
+    default=None,
+    help='Filter results by status.')
+@cliutils.arg(
+    '--share-group-snapshot', '--share_group_snapshot',
+    metavar='<share_group_snapshot>',
+    default=None,
+    action='single_alias',
+    help='Filter results by share group snapshot ID or name.')
+@cliutils.arg(
+    '--share-group-instance', '--share_group_instance',
+    metavar='<share_group_instance>',
+    default=None,
+    action='single_alias',
+    help='Filter results by share group instance ID.')
+@cliutils.arg(
+    '--limit',
+    metavar='<limit>',
+    type=int,
+    default=None,
+    help='Maximum number of share group snapshot instances to return. '
+         '(Default=None)')
+@cliutils.arg(
+    '--offset',
+    metavar="<offset>",
+    default=None,
+    help='Start position of share group snapshot instances listing.')
+@cliutils.arg(
+    '--sort-key', '--sort_key',
+    metavar='<sort_key>',
+    type=str,
+    default=None,
+    action='single_alias',
+    help='Key to be sorted, available keys are %(keys)s. (Default=None)' % {
+        'keys': constants.SHARE_GROUP_SNAPSHOT_INSTANCE_SORT_KEY_VALUES})
+@cliutils.arg(
+    '--sort-dir', '--sort_dir',
+    metavar='<sort_dir>',
+    type=str,
+    default=None,
+    action='single_alias',
+    help='Sort direction, available values are %(values)s. '
+         '(Default=None)' % {'values': constants.SORT_DIR_VALUES})
+@cliutils.arg(
+    '--detail', '--detailed',
+    dest='detailed',
+    default=True,
+    action='store_true',
+    help='Show detailed information about share group snapshot instances. '
+         '(Default=False)')
+@cliutils.arg(
+    '--columns',
+    metavar='<columns>',
+    type=str,
+    default=None,
+    help='Comma separated list of columns to be displayed. For example, '
+         '--columns "id,status,share_group_snapshot_id,'
+         'share_group_instance_id,name"')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_snapshot_instance_list(cs, args):
+    """List share group snapshot instances with filters (Experimental)."""
+    if args.columns is not None:
+        list_of_keys = _split_columns(columns=args.columns)
+    else:
+        list_of_keys = ('ID', 'Status', 'Share Group Snapshot ID',
+                        'Share Group Instance ID')
+
+    all_tenants = int(os.environ.get("ALL_TENANTS", args.all_tenants))
+
+    share_group_snapshot = (
+        _find_share_group_snapshot(cs, args.share_group_snapshot)
+        if args.share_group_snapshot else None)
+    search_opts = {
+        'all_tenants': all_tenants,
+        'status': args.status,
+        'limit': args.limit,
+        'offset': args.offset,
+    }
+    if args.share_group_instance:
+        search_opts['share_group_instance_id'] = _find_share_group_instance(
+            cs, args.share_group_instance)['id']
+    share_group_snapshot_instances = cs.share_group_snapshot_instances.list(
+        share_group_snapshot=share_group_snapshot, detailed=args.detailed,
+        search_opts=search_opts, sort_key=args.sort_key,
+        sort_dir=args.sort_dir)
+    cliutils.print_list(share_group_snapshot_instances, fields=list_of_keys,
+                        sortby_index=None)
+
+
+@cliutils.arg(
+    'share_group_snapshot_instance',
+    metavar='<share_group_snapshot_instance>',
+    help='Name or ID of the share group snapshot instance.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_snapshot_instance_show(cs, args):
+    """Show details about a share group snapshot instance (Experimental)."""
+    sg_snap_instance = _find_share_group_snapshot_instance(
+        cs, args.share_group_snapshot_instance)
+    _print_share_group_snapshot_instance(cs, sg_snap_instance)
+
+
+@cliutils.arg(
+    'share_group_snapshot_instance',
+    metavar='<share_group_snapshot_instance>',
+    nargs='+',
+    help='Name or ID of the share group snapshot instance(s) to delete.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_snapshot_instance_force_delete(cs, args):
+    """Force-delete one or more share group snapshot instances (Admin only,
+
+    Experimental)."""
+    failure_count = 0
+
+    for sg_snap_instance in args.share_group_snapshot_instance:
+        try:
+            _find_share_group_snapshot_instance(
+                cs, sg_snap_instance).force_delete()
+        except Exception as e:
+            failure_count += 1
+            print("Force delete for share group snapshot instance %s failed: "
+                  "%s" % (sg_snap_instance, e), file=sys.stderr)
+
+    if failure_count == len(args.share_group_snapshot_instance):
+        raise exceptions.CommandError(
+            "Unable to force delete any of the specified share group snapshot "
+            "instance.")
+
+
+@cliutils.arg(
+    '--state',
+    metavar='<state>',
+    default='available',
+    help=('Indicate which state to assign the share group snapshot instance. '
+          'Options include available, error, creating, deleting, '
+          'error_deleting. If no state is provided, available will be used.'))
+@cliutils.arg(
+    'share_group_snapshot_instance',
+    metavar='<share_group_snapshot_instance>',
+    help='Name or ID of the share group snapshot instance.')
+@cliutils.service_type('sharev2')
+@api_versions.wraps("2.56")
+@api_versions.experimental_api
+def do_share_group_snapshot_instance_reset_state(cs, args):
+    """Explicitly update the state of a share group snapshot instance
+
+    (Admin only, Experimental).
+    """
+    _find_share_group_snapshot_instance(
+        cs, args.share_group_snapshot_instance).reset_state(args.state)
 
 
 ##############################################################################

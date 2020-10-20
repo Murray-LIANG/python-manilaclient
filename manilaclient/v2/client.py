@@ -30,7 +30,9 @@ from manilaclient.v2 import security_services
 from manilaclient.v2 import services
 from manilaclient.v2 import share_access_rules
 from manilaclient.v2 import share_export_locations
+from manilaclient.v2 import share_group_instances
 from manilaclient.v2 import share_group_replicas
+from manilaclient.v2 import share_group_snapshot_instances
 from manilaclient.v2 import share_group_snapshots
 from manilaclient.v2 import share_group_type_access
 from manilaclient.v2 import share_group_types
@@ -219,10 +221,15 @@ class Client(object):
         self.share_export_locations = (
             share_export_locations.ShareExportLocationManager(self))
         self.share_groups = share_groups.ShareGroupManager(self)
+        self.share_group_instances = (
+            share_group_instances.ShareGroupInstanceManager(self))
         self.share_group_replicas = (
             share_group_replicas.ShareGroupReplicaManager(self))
         self.share_group_snapshots = (
             share_group_snapshots.ShareGroupSnapshotManager(self))
+        self.share_group_snapshot_instances = (
+            share_group_snapshot_instances.ShareGroupSnapshotInstanceManager(
+                self))
         self.share_group_type_access = (
             share_group_type_access.ShareGroupTypeAccessManager(self))
         self.share_group_types = share_group_types.ShareGroupTypeManager(self)

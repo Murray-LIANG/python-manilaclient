@@ -197,7 +197,7 @@ class ShareGroupReplicaManager(base.ManagerWithFind):
         """
         self._action(share_group_replica, 'resync')
 
-    @api_versions.wraps("2.11")
+    @api_versions.wraps("2.56")
     @api_versions.experimental_api
     def reset_replica_state(self, share_group_replica, replica_state):
         """Reset `replica_state` attr of the specified share group replica.
